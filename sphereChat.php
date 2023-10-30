@@ -11,7 +11,7 @@
  */
 
 //Укажите месторасположение файла chat.log
-const file_chat = 'chat.log';
+const file_chat = 'G:\server\Orion\build\game\log\chat.log';
 
 //Укажите ID сервера
 const server_id = 1;
@@ -23,7 +23,7 @@ const pattern_chat_message = '/^\[(.*)\] (.*) \[(.*)] (.+)$/';
 const db_host = 'localhost';
 const db_user = 'root';
 const db_pass = '';
-const db_name = 'l2j';
+const db_name = 'test';
 
 new sphereChat();
 
@@ -196,6 +196,7 @@ class SphereWeb
         if (empty($messages)) {
             return;
         }
+
         try {
             self::$pdo->beginTransaction();
             $sql = 'INSERT INTO `chat` (`date`, `type`, `player`, `message`, `server`) VALUES (:date, :type, :player, :message, :server)';
@@ -212,7 +213,13 @@ class SphereWeb
             self::$pdo->commit();
         } catch (PDOException $e) {
             echo sprintf("Ошибка при вставке данных: %s\n", $e->getMessage());
-            self::$pdo->rollBack();
+            $errorCode = $e->getCode();
+            if ($errorCode === 2006 or $errorCode === 'HY000') {
+                echo "Попытка переподключения к базе данных\n";
+                self::connect();
+                echo 'Повторная отправка данных в базу данных';
+                self::send($messages);
+            }
         }
     }
 
